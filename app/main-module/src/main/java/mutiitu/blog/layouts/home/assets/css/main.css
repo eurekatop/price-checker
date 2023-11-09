@@ -32,6 +32,7 @@ footer, header, hgroup, menu, nav, section {
 :root
 {
 	--color-nav-after: #fff; 
+	--primary-bg-color: #fff;
 }
 
 
@@ -1313,7 +1314,7 @@ input, select, textarea {
 
 	body {
 		/*background-image: url("/layouts/home/assets/css/images/overlay.png"), url("/layouts/home/assets/css/images/bg.jpg");*/
-		background-color: black;
+		background-color: var(--primary-bg-color);
 		background-repeat: repeat, no-repeat;
 		background-size: auto, 100% 100%;
 		background-attachment: fixed;

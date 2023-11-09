@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HomeLayout {
+public class HomeLayout { 
 
     //@Inject
     //CardUIComponent cardUIComponent;

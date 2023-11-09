@@ -45,8 +45,6 @@ dependencies {
     implementation 'org.slf4j:slf4j-simple:2.0.7'
 
     // template engine
-    implementation 'gg.jte:jte:3.0.3'
-    implementation 'org.thymeleaf:thymeleaf:3.1.2.RELEASE'
     implementation 'io.pebbletemplates:pebble:3.2.1'
 
     // DI   
@@ -60,6 +58,11 @@ dependencies {
     // serialization
     implementation 'com.google.code.gson:gson:2.10.1'
 
+
+    // business dependencies
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'org.jsoup:jsoup:1.16.2'
+    implementation 'com.jayway.jsonpath:json-path:2.8.0'
 
     // 
     implementation project(':persistence-module') 
@@ -194,6 +197,7 @@ tasks.register('copyAllLayoutsFolder', Copy) {
     include '**/*.json'
     include '**/*.txt'
     include '**/*.svg'
+    include '**/*.gif'
     into layout.buildDirectory.dir("resources/public/layouts")
 }
 
