@@ -1,0 +1,430 @@
+<html>
+
+<head>
+    <title>{% block title %}My Website{% endblock %}</title>
+
+    <!-- script src="https://unpkg.com/htmx.org@1.9.6"></script -->
+    <!-- script src="https://unpkg.com/lighterhtml"></script -->
+
+    <script src="https://unpkg.com/systemjs@6.14.2/dist/extras/amd.js"></script>
+    <script src="https://unpkg.com/systemjs@6.14.2/dist/system.js"></script>
+
+
+    <style>
+        my-custom-element {
+            display: block;
+            width: 80%;
+            height: auto;
+            border: 10px dashed black;
+        }
+
+        my-custom-element.div.img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 10px solid black;
+        }
+
+        /* --------- */
+        /* Dark Primary Color */
+        .dark-primary-color {
+            background-color: #FFA000;
+            color: #212121;
+        }
+
+        /* Light Primary Color */
+        .light-primary-color {
+            background-color: #FFECB3;
+            color: #212121;
+        }
+
+        /* Primary Color */
+        .primary-color {
+            background-color: #FFC107;
+            color: #212121;
+        }
+
+        /* Text / Icons */
+        .text-icons-color {
+            color: #212121;
+        }
+
+        /* Accent Color */
+        .accent-color {
+            background-color: #9E9E9E;
+            color: #212121;
+        }
+
+        /* Primary Text */
+        .primary-text-color {
+            color: #212121;
+        }
+
+        /* Secondary Text */
+        .secondary-text-color {
+            color: #757575;
+        }
+
+        /* Divider Color */
+        .divider-color {
+            background-color: #BDBDBD;
+            color: #212121;
+        }
+    </style>
+
+    <script module>
+        // TODO: CODE SMELL
+        async function loadLibSass() {
+            const sass = await import('https://jspm.dev/sass');
+            console.log(sass);
+            return sass;
+        }
+
+        // sass
+        sassString = `
+// Definir variables de color
+$primary-color: #007bff;
+$secondary-color: #28a745;
+
+// Aplicar estilos utilizando las variables de color
+body
+    font-family: Arial, sans-serif
+    background-color: $secondary-color
+
+.header
+    background-color: $primary-color
+    color: white
+    padding: 10px
+
+.button
+    background-color: $primary-color
+    color: white
+    border: none
+    padding: 10px 20px
+    cursor: pointer
+
+.link
+    color: $primary-color
+    text-decoration: none
+
+// Agregar otros estilos según sea necesario
+        `
+
+
+        // server payload
+        const serverPayload = {
+            blogsIds: {{ blogIds }}
+        }
+
+        const app = {
+            addBlogElement: (id) => {
+                const blogId = serverPayload.blogsIds[id]
+                const uuid = `${mu.uniqueId()}-${blogId}`
+
+                const element = mu.domParseFromStringGetChildNodes(`
+                <h1>${blogId}</h1>
+                <my-custom-element 
+                id="${uuid}"
+                name="header 616" content="/blog/get/${blogId}">
+                </my-custom-element>`)
+
+                // add to document
+                mu.appendNodesToElement(element, document.body)
+                //const el = document.getElementById(uuid).documentElement
+                const myElements = []
+                const els = document.querySelectorAll(`#${uuid}`);
+                els.forEach(function (elemento) {
+                    myElements.push(elemento)
+                });
+
+
+                //console.log(el.innerHTML)
+                //document.body.appendChild(element)
+
+                // add to observer
+                //myElements.push(element)
+                mu.observe(myElements);
+            }
+        }
+
+        // lib
+        const mu = {
+            sass: undefined,
+            // get childNodes
+            domParseFromStringGetChildNodes: (htmlString) => {
+                const parser = new DOMParser();
+                const documentFragment = parser.parseFromString(htmlString, "text/html");
+                return documentFragment.documentElement.getRootNode().body.childNodes
+            },
+            appendNodesToElement: (nodesList, targetElement) => {
+                nodesList.forEach((node) => {
+                    targetElement.appendChild(node);
+                });
+            },
+            uniqueId: () => {
+                return 'id-' + Math.random().toString(36).substr(2, 10);
+            },
+            //  ref: https://usefulangle.com/post/113/javascript-detecting-element-visible-during-scroll
+            observe: (entries) => {
+                const intersectionObserver = new IntersectionObserver(function (entries) {
+                    entries.forEach((entry) => {
+                        const target = entry.target;
+
+                        if (entry['isIntersecting'] === true) {
+                            if (entry['intersectionRatio'] === 1) {
+                                console.log('Target is fully visible in screen');
+                                target.load()
+
+                            }
+                            else if (entry['intersectionRatio'] > 0.5) {
+                                target.load()
+                                console.log('More than 50% of target is visible in screen');
+                            }
+                            else {
+                                target.load()
+                                console.log('Less than 50% of target is visible in screen');
+                            }
+                        }
+                        else {
+                            target.abort()
+
+                            console.log('Target is not visible in screen');
+                            // unload target.load()
+                        }
+                    })
+                }, { threshold: [0, 0.5, 1] });
+
+                entries.forEach((e) => {
+                    intersectionObserver.observe(e)
+                })
+            }
+
+        }
+        loadLibSass().then((f) => {
+            mu.sass = f
+            console.log(mu.sass.compileString(sassString))
+        })
+
+        // Define el elemento personalizado
+        class MyCustomElement extends HTMLElement {
+
+            childLoader = undefined // container loader
+            div = undefined // container
+            id = undefined
+            name = undefined
+            content = undefined
+            loaded = false;
+            loading = false;
+            abortController = undefined;
+
+            constructor() {
+                super();
+                this.shadow = this.attachShadow({ mode: "open" })
+            }
+
+            connectedCallback() {
+                this.shadow.innerHTML = `
+            <style>
+                :host {
+                  display: block;
+                  font-size:8px;
+                  border: 1px dotted #900
+                }
+                img {
+                    width:100%;
+                    height:auto;
+                    border:10px solid black;
+                }
+                div {
+                    width:100%;
+                    height:auto;
+                    border:10px solid black;
+                }
+                div#loader {
+                    font-size:30px;
+                    border:10px dashed cyan;
+                    height: 600px; 
+                }
+                p {
+                    margin-bottom:60px;
+                }
+            </style>
+        `
+
+
+                const uniqueId = mu.uniqueId();
+
+                this.name = this.getAttribute("name")
+                this.content = this.getAttribute("content")
+
+                // create inner elements
+                const childElement = document.createElement('div');
+                const elementLoader = document.createElement('div');
+
+                this.div = childElement
+                this.childLoader = elementLoader
+
+                // attach to shado
+                this.shadow.appendChild(this.div)
+                this.shadow.appendChild(this.childLoader)
+                //const childElement = mu.lh.html.node`<p>loader .... ${name}!</p>`;
+
+                const childElements = mu.domParseFromStringGetChildNodes(`<div id="loader">loader .... ${name}!</div>`)
+
+                mu.appendNodesToElement(childElements, this.childLoader) // add to inner container
+
+                // set attributes
+                this.childLoader.setAttribute('id', `div-${uniqueId}`)
+
+                // get space on screen
+                this.div.style.cssText = `
+    border: 1px dashed grey; 
+    height:auto;
+    font-size:4em;
+`;
+            }
+
+            // abort download
+            abort() {
+                if (this.controller) {
+                    // abort xhr
+                    this.controller.abort();
+                    this.loaded = false;
+
+                    // try to abort images download
+                    var nodeListImg = this.div.querySelectorAll("img")
+                    nodeListImg.forEach((img) => {
+                        console.log(img)
+                        // set attribute src to "nothing" or cached image
+                        img.src = "#"
+                    });
+
+                    // remove or move div?
+                    this.div.replaceChildren()
+                    this.childLoader.style.display = "block"
+
+
+
+                }
+            }
+
+            // load content
+            load() {
+                if (this.loaded || this.loading)
+                    return;
+
+                // Configura el controlador de aborto y la señal
+                this.controller = new AbortController();
+                const signal = this.controller.signal;
+
+                const urlContent = this.content
+                const _this = this;
+
+                this.loading = true;
+                var responsePromise = fetch(urlContent, { signal })
+                    .then(function (respuesta) {
+                        if (!respuesta.ok) {
+                            throw new Error('La respuesta no fue exitosa.');
+                        }
+                        return respuesta.text();
+                    })
+                    .then(function (datos) {
+                        _this.loaded = true;
+                        _this.replace(datos)
+                        //_this.div.style.cssText = 'display:none'
+                    })
+                    .catch(function (error) {
+                        console.error('Error:', error);
+                    })
+                    .finally(function () {
+                        // Este código se ejecutará en todos los casos
+                        _this.loading = false;
+                    });
+
+            }
+
+            // insert content in slot
+            replace(data) {
+                //this.div.innerHTML = data
+                //const elementData = mu.lh.html.node`<p>a:=${data}</p>`;
+                //mu.lh.render(document.body, elementData)
+                //this.appendChild(element)
+                //const parser = new DOMParser();
+                //const doc = parser.parseFromString(data, "text/html");
+
+                const doc = mu.domParseFromStringGetChildNodes(data);
+                //this.appendChild(doc)
+                mu.appendNodesToElement(doc, this.div);
+                this.childLoader.style.display = "none"
+                // Utiliza requestAnimationFrame para actualizar el diseño
+                //const _this = this;
+                //requestAnimationFrame(() => {
+                //    const el = document.getElementById(_this.id)
+                //    console.log(el)
+                //    // el.offsetHeight = "1000px"; // Opcionalmente, puedes usar miElemento.offsetWidth;
+                //    // A continuación, puedes realizar otras operaciones con el nuevo diseño
+                //});
+
+            }
+        }
+
+        window.onload = function () {
+            const myElements = []
+
+
+            customElements.define('my-custom-element', MyCustomElement);
+            const elementosPersonalizados = document.querySelectorAll('my-custom-element');
+            elementosPersonalizados.forEach(function (elemento) {
+                myElements.push(elemento)
+            });
+
+            // observer in scroll
+            mu.observe(myElements);
+        };
+    </script>
+
+</head>
+
+<body>
+
+    {% include './base.sass' %}
+
+
+    {# THIS IS A COMMENT #}
+
+
+    <!-- TODO: html template engine -->
+    {# { header.init("#{subtitle}") | raw} #}
+
+
+    <!-- TODO: html template engine -->
+    {# { header.init("#{subtitle}") | raw} #}
+
+    {# <button hx-get="/header/get/name" hx-swap="outerHTML"> #}
+        {# Click Me #}
+        {# </button> #}
+
+
+    <!-- static  render 
+    {# {% for blog in blogEntries %}  #}
+    {# {{ blogEntryComponent.init(blog) | raw}}  #}
+    {# {% endfor %}  #}
+    -->
+
+
+    <my-custom-element id="m1" name="header 606" content="/blog/get/606" id="id-ii1lhosy57"> </my-custom-element>
+
+    <!-- dynamic load-->
+    {% for blogId in blogIds %}
+    <my-custom-element name="header {{ blogId }}" content="/blog/get/{{ blogId }}"></my-custom-element>
+    {% endfor %}
+
+
+    <!-- img src="/images/neom-39n8YVSn0d4-unsplash.jpg" / -->
+    <!-- img id="love" src="/icons/iconmonstr-heart-lined-64.png" / -->
+
+
+
+</body>
+
+</html>

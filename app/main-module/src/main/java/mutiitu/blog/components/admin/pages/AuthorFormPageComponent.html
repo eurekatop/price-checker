@@ -1,0 +1,185 @@
+<div class="container">
+    <h2>Auhtor Form</h2>
+    <div hx-ext="response-targets">
+
+    <form id="form-{{UUID}}" hx-post="/author-entry/post" 
+        hx-target="#response-ok-{{UUID}}"
+        hx-target-400="#response-400-{{UUID}}"
+        >
+
+        <div class="form-group">
+            <label for="id">ID</label>
+            <input type="text" disabled class="form-control" id="id" name="id" value="0">
+        </div>
+
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" class="form-control" id="name" name="name">
+        </div>
+
+        <div class="form-group">
+            <label for="surname">Surname</label>
+            <input type="text" class="form-control" id="surname" name="surname">
+        </div>
+
+        <div class="form-group">
+            <label for="surname">Password</label>
+            <input type="password" class="form-control" id="password" name="password">
+        </div>
+
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+        
+    </form>
+
+    <!-- message ok container -->
+    <div id="response-ok-{{UUID}}" style="display:none"></div>
+    </div>
+
+    <!-- messake ko container -->
+    <div id="response-400-{{UUID}}" style="display:none"></div>
+    </div>
+
+    <!-- toast container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast-{{UUID}}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        </div>
+    </div>
+      
+</div>
+</div>
+
+<script>
+    if ( !validateForm_{{UUID}} ) {
+        var validateForm_{{UUID}} = (id) =>  {
+        const self = {
+            _id:id,
+    
+            // INIT FUNC
+            _init : (id) => {
+                const form = document.getElementById(`form-${id}`);
+
+                // events on form submit
+                form.addEventListener('htmx:configRequest', function (event) {
+                    event.detail.headers['Accept'] = 'application/json';
+                });
+
+                form.addEventListener('htmx:afterOnLoad', function (event) {
+                    if (event.detail.xhr.status === 400) {
+                        try {
+                            const errorData = JSON.parse(event.detail.xhr.responseText);
+                            self.displayErrors(errorData);
+                        } catch (e) {
+                            // Handle JSON parsing error
+                        }
+                    }
+                    if (event.detail.xhr.status === 200) {
+                        try {
+                            const data = JSON.parse(event.detail.xhr.responseText);
+                            self.updateData(data)
+                        } catch (e) {
+                            // Handle JSON parsing error
+                            alert(e)
+                        }
+                    }
+                });
+
+                // events on state change
+                self._onChangeContentDisplayToasts('response-400-{{UUID}}')
+                self._onChangeContentDisplayToasts('response-ok-{{UUID}}')
+
+
+            },
+
+            _onChangeContentDisplayToasts: (id) => {
+                const targetNode = document.getElementById(id);
+                const config = { attributes: true, childList: true, subtree: true };
+                // Callback function to execute when mutations are observed
+                const callback = (mutationList, observer) => {
+                for (const mutation of mutationList) {
+                    if (mutation.type === "childList") {
+                    console.log("A child node has been added or removed.");
+                    console.log ( mutation.addedNodes )
+                    for ( let node of mutation.addedNodes )  {
+                        console.log ( node )
+                        const toastLiveExample = document.getElementById(`liveToast-${self._id}`)
+                        toastLiveExample.innerHTML = node.data
+                        bootstrap.Toast.getOrCreateInstance(toastLiveExample).show()
+                    }
+
+                    } else if (mutation.type === "attributes") {
+                    console.log(`The ${mutation.attributeName} attribute was modified.`);
+                    }
+                }
+                };
+                // Create an observer instance linked to the callback function
+                const observer = new MutationObserver(callback);
+                // Start observing the target node for configured mutations
+                observer.observe(targetNode, config);
+                // Later, you can stop observing
+                //observer.disconnect();
+
+            },
+
+            removeErrors: () => {
+                const form = document.getElementById(`form-${id}`);
+                const errorsElement = form.querySelectorAll(`ul.error-list`);
+                for (var el of errorsElement) {
+                    el.remove();
+                }
+                const inputElements = form.querySelectorAll(`[name]`);
+                for (var el of inputElements) {
+                    el.classList.remove('is-invalid')
+                }
+            },
+
+            // DISPLAY ERRORS
+            displayErrors: (errorData) => {
+                self.removeErrors();
+
+                // set errors
+                for (const fieldName in errorData) {
+                    const errorMessages = errorData[fieldName];
+                    const inputElement = document.querySelector(`[name="${fieldName}"]`);
+
+                    if (inputElement) {
+                        const errorList = document.createElement('ul');
+                        errorList.classList.add('error-list');
+
+                        errorMessages.forEach((errorMessage) => {
+                            const errorItem = document.createElement('li');
+                            errorItem.textContent = errorMessage.message;
+                            errorList.appendChild(errorItem);
+                        });
+
+                        inputElement.classList.add('is-invalid');
+                        inputElement.parentNode.appendChild(errorList);
+                    }
+                }
+            },
+
+            //update data
+            updateData: (data) => {
+                self.removeErrors();
+
+                for (const fieldName of Object.keys(data?.data)) {
+                    const value = data?.data[fieldName]
+                    const inputElement = document.querySelector(`[name="${fieldName}"]`);
+                    inputElement.value = value
+                }
+            }
+
+
+        }
+
+        self._init(id)
+        return (self)
+        }
+
+        validateForm_{{UUID}}("{{UUID}}")
+
+    }
+    
+
+
+</script>

@@ -1,0 +1,82 @@
+
+-- {{rows}}
+
+
+<table id="data-{{UUID}}" class="display" style="width:100%">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>AuthorId</th>
+            <th>Title</th>
+            <th>Subtitle</th>
+            <th>Content</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in blogs %}
+        <tr data-blog-id="{{row.id}}">
+            <td>{{ row.id }}</td>
+            <td>{{ row.authorId }}</td>
+            <td>{{ row.title }}</td>
+            <td>{{ row.subtitle }}</td>
+            <td>{{ row.content }}</td>
+        </tr>            
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <th>Id</th>
+            <th>AuthorId</th>
+            <th>Title</th>
+            <th>Subtitle</th>
+            <th>Content</th>
+        </tr>
+    </tfoot>
+</table>
+
+<script>
+        const table_{{UUID}} = new DataTable('#data-{{UUID}}', {
+        
+            columnDefs: [ {
+                "targets": -1, // The last column (Actions column)
+                "data": null,
+                "defaultContent": /*html*/`<button type="button" class="btn" data-action="edit">Edit</button> 
+                <button type="button" class="btn" data-action="delete">Delete</button>` // Action buttons
+            }],
+
+            initComplete: function () {
+            let api = this.api();
+
+            api.on('click', 'button', async function (e) {
+                console.log (e)
+
+                const rowElement = $(this).parents('tr');
+                const blogId = $(this).parents('tr').data('blogId'); 
+                const action = $(this).data('action');
+
+                switch (action) {
+                    case "edit":
+                        return;
+                    case "delete":
+                        e.stopPropagation();
+
+                        mu.action('POST', `/admin/action/blog-delete?id=${blogId}`)
+                            .then((data) => {
+                                rowElement.remove();
+                            })
+                            .catch((error) => alert("!" + error));
+                        break;
+                
+                    default:
+                        break;
+                }
+            });
+
+
+            api.on('click', 'tbody tr', function () {
+                const blogId = this.dataset.blogId
+                window.mu.router.navigate(`/admin/blog/${blogId}`);
+            });
+        }});
+//});
+</script>
